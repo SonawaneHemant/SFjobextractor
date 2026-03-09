@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+apscheduler
+python-dotenv
+simple-salesforce
+pandas
+langchain
+langgraph
+langchain-core
+langchain-ollama
+langchain-community
+chromadb
