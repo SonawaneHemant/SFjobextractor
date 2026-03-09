@@ -1,14 +1,70 @@
 import json
+import os
 from langchain_ollama import OllamaLLM
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_community.llms import HuggingFaceHub
+from langchain_huggingface import HuggingFaceEndpoint
+from langchain_huggingface import ChatHuggingFace
 
 from salesforce_monitor_backend.Models.ai_models import SystemHealthReport
 
-def run_ai_analysis(metrics, alerts ,failed_jobs):
+def run_ai_analysis_structured_pydentic_Old(metrics, alerts, failed_jobs):
 
     llm = OllamaLLM(
-        model="qwen2.5:7b",
-        temperature=0   # makes output stable
+        model="qwen2.5:3b",
+        temperature=0
+    )
+
+    # Create parser
+    parser = PydanticOutputParser(
+        pydantic_object=SystemHealthReport
+    )
+
+    format_instructions = parser.get_format_instructions()
+
+    prompt = f"""
+    You are a Salesforce DevOps Monitoring AI.
+
+    Analyze the job metrics and failed job errors.
+
+    Metrics:
+    Total Jobs: {metrics["total_jobs"]}
+    Completed Jobs: {metrics["completed"]}
+    Failed Jobs: {metrics["failed"]}
+    Total Errors: {metrics["total_errors"]}
+
+    Alerts:
+    {alerts}
+
+    Failed Jobs:
+    {failed_jobs}
+
+    IMPORTANT:
+    Return ONLY the final JSON result.
+    DO NOT return the schema.
+    DO NOT explain anything.
+    DO NOT include markdown.
+
+    {format_instructions}
+    """
+
+    response = llm.invoke(prompt)
+
+    # Parse response automatically
+    structured_output = parser.parse(response)
+
+    return structured_output
+
+def run_ai_analysis(metrics, alerts ,failed_jobs):
+
+    # llm = OllamaLLM(
+    #     model="qwen2.5:7b",
+    #     temperature=0   # makes output stable
+    # )
+
+    llm = HuggingFaceHub(
+    repo_id="Qwen/Qwen2.5-7B-Instruct",
+    huggingfacehub_api_token=os.getenv("HUGGINGFACE_API_KEY")
     )
 
     failed_jobs_text = ""
@@ -123,12 +179,18 @@ def run_ai_analysis_structured(metrics, alerts, failed_jobs):
 
 def run_ai_analysis_structured_pydentic(metrics, alerts, failed_jobs):
 
-    llm = OllamaLLM(
-        model="qwen2.5:3b",
-        temperature=0
+    # Step 1: Create HuggingFace endpoint
+    hf_llm = HuggingFaceEndpoint(
+        repo_id="Qwen/Qwen2.5-7B-Instruct",
+        huggingfacehub_api_token=os.getenv("HUGGINGFACE_API_KEY"),
+        temperature=0.2,
+        max_new_tokens=512,
     )
 
-    # Create parser
+    # Step 2: Wrap it in Chat model
+    llm = ChatHuggingFace(llm=hf_llm)
+
+    # Step 3: Create parser
     parser = PydanticOutputParser(
         pydantic_object=SystemHealthReport
     )
@@ -136,34 +198,34 @@ def run_ai_analysis_structured_pydentic(metrics, alerts, failed_jobs):
     format_instructions = parser.get_format_instructions()
 
     prompt = f"""
-You are a Salesforce DevOps Monitoring AI.
-
-Analyze the job metrics and failed job errors.
-
-Metrics:
-Total Jobs: {metrics["total_jobs"]}
-Completed Jobs: {metrics["completed"]}
-Failed Jobs: {metrics["failed"]}
-Total Errors: {metrics["total_errors"]}
-
-Alerts:
-{alerts}
-
-Failed Jobs:
-{failed_jobs}
-
-IMPORTANT:
-Return ONLY the final JSON result.
-DO NOT return the schema.
-DO NOT explain anything.
-DO NOT include markdown.
-
-{format_instructions}
-"""
+    You are a Salesforce DevOps Monitoring AI.
+    
+    Analyze the job metrics and failed job errors.
+    
+    Metrics:
+    Total Jobs: {metrics["total_jobs"]}
+    Completed Jobs: {metrics["completed"]}
+    Failed Jobs: {metrics["failed"]}
+    Total Errors: {metrics["total_errors"]}
+    
+    Alerts:
+    {alerts}
+    
+    Failed Jobs:
+    {failed_jobs}
+    
+    IMPORTANT:
+    Return ONLY the final JSON result.
+    DO NOT return the schema.
+    DO NOT explain anything.
+    DO NOT include markdown.
+    
+    {format_instructions}
+    """
 
     response = llm.invoke(prompt)
 
-    # Parse response automatically
-    structured_output = parser.parse(response)
+    # Chat models return message objects
+    structured_output = parser.parse(response.content)
 
     return structured_output
