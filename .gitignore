@@ -30,3 +30,7 @@ node_modules/
 chroma_db/
 *.db
 .cursor/
+
+salesforce_token.txt
+server.crt
+server.key

@@ -2,18 +2,29 @@ from simple_salesforce import Salesforce
 from dotenv import load_dotenv
 import os
 import salesforce_monitor_backend.DataBase.database_extract_jobs as database_extract_jobs
+from salesforce_monitor_backend.Service.salesforce_auth_service import get_salesforce_access_token
 
 load_dotenv()
 
 def extract_and_store_jobs():
-    session_id = os.getenv("SF_SESSION_ID")
-    instance_url = os.getenv("SF_INSTANCE_URL") 
 
+
+    #Old working code with SESSION ID use 
+    # session_id = os.getenv("SF_SESSION_ID")
+    # instance_url = os.getenv("SF_INSTANCE_URL") 
+
+    # sf = Salesforce(
+    #     instance_url=instance_url,
+    #     session_id=session_id
+    # )
+
+    #New SF with token and Auth
+    access_token, instance_url = get_salesforce_access_token()
     sf = Salesforce(
-        instance_url=instance_url,
-        session_id=session_id
+    instance_url=instance_url,
+    session_id=access_token
     )
-
+    
     query = """
     SELECT                         
             Id,

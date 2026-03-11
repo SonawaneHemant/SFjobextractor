@@ -7,6 +7,9 @@ import salesforce_monitor_backend.DataBase.database_extract_jobs as database_ext
 from salesforce_monitor_backend.Agent.limit_guard_agent import LimitGuardAgent
 from salesforce_monitor_backend.Service.scheduler import start_scheduler
 import salesforce_monitor_backend.Service.ai_salesforce_service_main as ai_salesforce_service_main
+import os
+import requests
+from fastapi.responses import RedirectResponse
 
 app = FastAPI(
     title="Salesforce Job Monitoring API",
@@ -136,3 +139,99 @@ def run_limit_guard():
 def run_fetch_jobs():
     result=ai_salesforce_service_main.extract_and_store_jobs()
     return result
+
+#working sf access token
+# @app.get("/login")
+# def login():
+
+#     auth_url = (
+#         f"{os.getenv('SF_LOGIN_URL')}/services/oauth2/authorize"
+#         f"?response_type=code"
+#         f"&client_id={os.getenv('SF_CLIENT_ID')}"
+#         f"&redirect_uri={os.getenv('SF_REDIRECT_URI')}"
+#     )
+
+#     return {"login_url": auth_url}
+
+# @app.get("/v1/callback")
+# def oauth_callback(code: str):
+
+#     token_url = f"{os.getenv('SF_LOGIN_URL')}/services/oauth2/token"
+
+#     payload = {
+#         "grant_type": "authorization_code",
+#         "client_id": os.getenv("SF_CLIENT_ID"),
+#         "client_secret": os.getenv("SF_CLIENT_SECRET"),
+#         "redirect_uri": os.getenv("SF_REDIRECT_URI"),
+#         "code": code
+#     }
+
+#     response = requests.post(token_url, data=payload)
+
+#     data = response.json()
+
+#     access_token = data["access_token"]
+#     refresh_token = data["refresh_token"]
+#     instance_url = data["instance_url"]
+
+#     print("ACCESS TOKEN:", access_token)
+#     print("REFRESH TOKEN:", refresh_token)
+
+#     return data
+
+#automated SF access token
+
+@app.get("/login")
+def login():
+
+    auth_url = (
+        f"{os.getenv('SF_LOGIN_URL')}/services/oauth2/authorize"
+        f"?response_type=code"
+        f"&client_id={os.getenv('SF_CLIENT_ID')}"
+        f"&redirect_uri={os.getenv('SF_REDIRECT_URI')}"
+    )
+
+    return RedirectResponse(auth_url)
+
+
+@app.get("/v1/callback")
+def oauth_callback(code: str):
+
+    token_url = f"{os.getenv('SF_LOGIN_URL')}/services/oauth2/token"
+
+    payload = {
+        "grant_type": "authorization_code",
+        "client_id": os.getenv("SF_CLIENT_ID"),
+        "client_secret": os.getenv("SF_CLIENT_SECRET"),
+        "redirect_uri": os.getenv("SF_REDIRECT_URI"),
+        "code": code
+    }
+
+    response = requests.post(token_url, data=payload)
+    data = response.json()
+
+    access_token = data["access_token"]
+    refresh_token = data["refresh_token"]
+    instance_url = data["instance_url"]
+
+    print("ACCESS TOKEN:", access_token)
+    print("REFRESH TOKEN:", refresh_token)
+
+    # Store refresh token
+    save_refresh_token(refresh_token, instance_url)
+
+    return RedirectResponse("/connected-success")
+
+def save_refresh_token(refresh_token, instance_url):
+
+    with open("salesforce_token.txt", "w") as f:
+        f.write(refresh_token)
+
+    print("Refresh token saved successfully")
+
+@app.get("/connected-success")
+def success():
+
+    return {
+        "status": "Salesforce connected successfully"
+    }
