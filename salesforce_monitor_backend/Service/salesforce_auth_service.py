@@ -4,13 +4,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_salesforce_access_token():
+# def get_salesforce_access_token():
 
-    import os
-import requests
-from dotenv import load_dotenv
+#     import os
+# import requests
+# from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
 def get_salesforce_access_token():
 
@@ -33,6 +33,27 @@ def get_salesforce_access_token():
     return data["access_token"], data["instance_url"]
 
 
+def get_salesforce_access_token_ClientCred():
+
+    url = f"{os.getenv('SF_INSTANCE_URL')}/services/oauth2/token"
+
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": os.getenv("SF_CLIENT_ID"),
+        "client_secret": os.getenv("SF_CLIENT_SECRET")
+    }
+
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+
+    response = requests.post(url, data=payload, headers=headers)
+
+    data = response.json()
+
+    return data["access_token"], data["instance_url"]
+
+#def get_salesforce_access_token():
     # url = f"{os.getenv('SF_LOGIN_URL')}/services/oauth2/token"
 
     # payload = {

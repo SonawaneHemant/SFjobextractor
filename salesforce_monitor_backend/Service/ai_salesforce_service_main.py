@@ -2,8 +2,8 @@ from simple_salesforce import Salesforce
 from dotenv import load_dotenv
 import os
 import salesforce_monitor_backend.DataBase.database_extract_jobs as database_extract_jobs
-from salesforce_monitor_backend.Service.salesforce_auth_service import get_salesforce_access_token
-
+from salesforce_monitor_backend.Service.salesforce_auth_service import get_salesforce_access_token 
+from salesforce_monitor_backend.Service.salesforce_auth_service import get_salesforce_access_token_ClientCred
 load_dotenv()
 
 def extract_and_store_jobs():
@@ -19,12 +19,20 @@ def extract_and_store_jobs():
     # )
 
     #New SF with token and Auth
-    access_token, instance_url = get_salesforce_access_token()
-    sf = Salesforce(
-    instance_url=instance_url,
-    session_id=access_token
-    )
+    # access_token, instance_url = get_salesforce_access_token()
+    # sf = Salesforce(
+    # instance_url=instance_url,
+    # session_id=access_token
+    # )
     
+    #with Client Cred 
+    access_token, instance_url = get_salesforce_access_token_ClientCred()
+
+    sf = Salesforce(
+        instance_url=instance_url,
+        session_id=access_token
+    )
+
     query = """
     SELECT                         
             Id,

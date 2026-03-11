@@ -53,8 +53,6 @@ from simple_salesforce import Salesforce
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
 def login_salesforce():
 
     sf = Salesforce(
@@ -70,13 +68,36 @@ def login_salesforce():
     return session_id, instance_url
 
 
+def get_salesforce_access_token_ClientCred():
+
+    url = f"{os.getenv('SF_INSTANCE_URL')}/services/oauth2/token"
+
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": os.getenv("SF_CLIENT_ID"),
+        "client_secret": os.getenv("SF_CLIENT_SECRET")
+    }
+
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+
+    response = requests.post(url, data=payload, headers=headers)
+
+    print("Status Code:", response.status_code)
+    print("Response Text:", response.text)
+
+    data = response.json()
+
+    return data["access_token"], data["instance_url"]
+
 if __name__ == "__main__":
 
     print("Starting Salesforce authentication test...\n")
 
     #access_token, instance_url = get_salesforce_access_token()
     #session_id, instance_url=login_salesforce()
-    access_token, instance_url = refresh_salesforce_token()
+    access_token, instance_url = get_salesforce_access_token_ClientCred()
     sf = Salesforce(
     instance_url=instance_url,
     session_id=access_token
